@@ -1,0 +1,256 @@
+# OWASP ZAP Configuration File
+# Dynamic Application Security Testing (DAST)
+
+contexts:
+  - name: Default Context
+    urls:
+      - http://localhost:5000
+    includePaths:
+      - http://localhost:5000/.*
+    excludePaths:
+      - http://localhost:5000/logout.*
+      - http://localhost:5000/admin.*
+      - http://localhost:5000/static/.*
+    authentication:
+      type: form
+      loginUrl: http://localhost:5000/api/login
+      loginRequestData: username=${username}&password=${password}
+    session:
+      type: cookieAuth
+      name: session
+
+spiders:
+  - context: Default Context
+    depth: 5
+    maxDuration: 60
+    maxChildren: 100
+    handleParameters: true
+    handleODataParametersVisited: true
+
+passiveScan:
+  - disable: false
+    scanOnlyInScope: true
+    maxAlertsPerRule: 10
+    rules:
+      # Information Disclosure
+      - 10021  # X-Content-Type-Options
+      - 10016  # X-Frame-Options
+      - 10017  # Server
+      - 10096  # User-Agent
+      - 10054  # X-AspNet-Version
+      - 10061  # X-Powered-By
+      - 10098  # Timestamp Disclosure
+
+      # Content Security
+      - 100033 # Path Traversal
+      - 100034 # Server Side Include
+      - 100041 # Information Disclosure - Debug Error Messages
+
+      # Cross-Site Scripting
+      - 100036 # XSS Reflected
+      - 100037 # XSS Persistent
+
+      # Injection
+      - 100038 # SQL Injection
+      - 100039 # SQL Injection
+      - 100040 # SQL Injection
+
+activeScan:
+  - policy: Default Policy
+    defaultPolicy: true
+    scanPolicyName: Default Policy
+    maxScanDuration: 60
+    delayInMs: 0
+    threadsPerHost: 2
+
+policies:
+  - name: Default Policy
+    defaultLevel: Medium
+    rules:
+      # Cross Site Scripting (Reflected)
+      - id: 40012
+        strength: Medium
+        threshold: Medium
+
+      # Cross Site Scripting (Persistent)
+      - id: 40014
+        strength: Medium
+        threshold: Medium
+
+      # Path Traversal
+      - id: 100033
+        strength: Medium
+        threshold: Medium
+
+      # SQL Injection
+      - id: 90033
+        strength: Medium
+        threshold: Medium
+
+      # Command Injection
+      - id: 90034
+        strength: Medium
+        threshold: Medium
+
+      # Remote File Inclusion
+      - id: 90035
+        strength: Medium
+        threshold: Medium
+
+      # Local File Inclusion
+      - id: 90036
+        strength: Medium
+        threshold: Medium
+
+      # Directory Listing
+      - id: 90037
+        strength: Medium
+        threshold: Medium
+
+      # Source Code Disclosure
+      - id: 90038
+        strength: Medium
+        threshold: Medium
+
+      # Server Side Include
+      - id: 90039
+        strength: Medium
+        threshold: Medium
+
+      # HTTP Response Splitting
+      - id: 90040
+        strength: Medium
+        threshold: Medium
+
+      # HTTP Parameter Pollution
+      - id: 90041
+        strength: Medium
+        threshold: Medium
+
+      # Format String
+      - id: 90042
+        strength: Medium
+        threshold: Medium
+
+      # LDAP Injection
+      - id: 90043
+        strength: Medium
+        threshold: Medium
+
+      # XML External Entity
+      - id: 90044
+        strength: Medium
+        threshold: Medium
+
+      # XPath Injection
+      - id: 90045
+        strength: Medium
+        threshold: Medium
+
+      # XSLT Injection
+      - id: 90046
+        strength: Medium
+        threshold: Medium
+
+      # Redirect
+      - id: 90047
+        strength: Medium
+        threshold: Medium
+
+      # CRLF Injection
+      - id: 90048
+        strength: Medium
+        threshold: Medium
+
+      # HTTPoxy
+      - id: 90049
+        strength: Medium
+        threshold: Medium
+
+      # ShellShock
+      - id: 90050
+        strength: Medium
+        threshold: Medium
+
+      # Heartbleed
+      - id: 90051
+        strength: Medium
+        threshold: Medium
+
+      # SSL/TLS
+      - id: 90052
+        strength: Medium
+        threshold: Medium
+
+      # CSRF
+      - id: 90053
+        strength: Medium
+        threshold: Medium
+
+      # Clickjacking
+      - id: 90054
+        strength: Medium
+        threshold: Medium
+
+      # Content Security Policy
+      - id: 90055
+        strength: Medium
+        threshold: Medium
+
+      # X-Content-Type-Options
+      - id: 90056
+        strength: Medium
+        threshold: Medium
+
+      # X-Frame-Options
+      - id: 90057
+        strength: Medium
+        threshold: Medium
+
+      # Strict-Transport-Security
+      - id: 90058
+        strength: Medium
+        threshold: Medium
+
+      # Public-Key-Pins
+      - id: 90059
+        strength: Medium
+        threshold: Medium
+
+      # X-XSS-Protection
+      - id: 90060
+        strength: Medium
+        threshold: Medium
+
+      # Referrer-Policy
+      - id: 90061
+        strength: Medium
+        threshold: Medium
+
+      # Permissions-Policy
+      - id: 90062
+        strength: Medium
+        threshold: Medium
+
+# Alert thresholds
+# Options: Off, Low, Medium, High
+alertThreshold: Medium
+
+# Maximum alerts per rule
+maxAlertsPerRule: 10
+
+# Report format
+# Options: HTML, XML, JSON, MD
+reportFormat: HTML
+
+# Report title
+reportTitle: "DevSecOps Application Security Report"
+
+# Report author
+reportAuthor: "DevSecOps Team"
+
+# Progress bar
+progressBar: true
+
+# Debug mode
+debug: false

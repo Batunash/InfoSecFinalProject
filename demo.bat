@@ -68,15 +68,24 @@ echo [OK] User registered
 echo.
 
 echo Logging in...
-curl -s -X POST http://localhost:5000/api/login -H "Content-Type: application/json" -d "{\"username\":\"demouser\",\"password\":\"password123\"}"
-echo.
+for /f "delims=" %%i in ('powershell -NoProfile -Command "$r = Invoke-RestMethod -Method Post -Uri http://localhost:5000/api/login -ContentType 'application/json' -Body '{"username":"demouser","password":"password123"}'; $r | ConvertTo-Json -Depth 10; $r.access_token"') do set "TOKEN=%%i"
 echo [OK] User logged in
 echo.
 
 echo Accessing protected endpoint...
+<<<<<<< HEAD
 REM Note: In practice, extract token from login response above and use it here
 REM Example: curl -s -X GET http://localhost:5000/api/protected -H "Authorization: Bearer <actual_token_from_login>"
 echo [OK] Protected endpoint accessed (demo - replace with actual token)
+=======
+curl -s -X GET http://localhost:5000/api/protected -H "Authorization: Bearer %TOKEN%"
+echo.
+if %ERRORLEVEL% EQU 0 (
+    echo [OK] Protected endpoint accessed
+) else (
+    echo [WARNING] Protected endpoint check failed
+)
+>>>>>>> d75c4e04df2dade565ecf3a7f59e7c56c5ddb38c
 echo.
 
 REM 6. Unit Tests
@@ -121,8 +130,17 @@ echo ==========================================
 echo 9. Container Image Scanning (Trivy)
 echo ==========================================
 echo.
-trivy image devsecops-app:demo --severity HIGH,CRITICAL
-echo [OK] Container scan completed
+where trivy >nul 2>nul
+if %ERRORLEVEL% EQU 0 (
+    trivy image devsecops-app:demo --severity HIGH,CRITICAL
+    if %ERRORLEVEL% EQU 0 (
+        echo [OK] Container scan completed
+    ) else (
+        echo [WARNING] Container scan found issues
+    )
+) else (
+    echo [WARNING] Trivy is not installed; container scan skipped
+)
 echo.
 
 REM 10. Code Quality Checks

@@ -26,9 +26,9 @@ def hash_password(password: str) -> str:
 
     # Generate salt and hash password
     salt = bcrypt.gensalt()
-    hashed = bcrypt.hashpw(password.encode('utf-8'), salt)
+    hashed = bcrypt.hashpw(password.encode("utf-8"), salt)
 
-    return hashed.decode('utf-8')
+    return hashed.decode("utf-8")
 
 
 def verify_password(password: str, hashed_password: str) -> bool:
@@ -46,10 +46,7 @@ def verify_password(password: str, hashed_password: str) -> bool:
         return False
 
     try:
-        return bcrypt.checkpw(
-            password.encode('utf-8'),
-            hashed_password.encode('utf-8')
-        )
+        return bcrypt.checkpw(password.encode("utf-8"), hashed_password.encode("utf-8"))
     except Exception as e:
         logger.error(f"Password verification error: {str(e)}")
         return False
@@ -69,16 +66,16 @@ def validate_input(input_value: str, input_type: str) -> bool:
     if not input_value or not isinstance(input_value, str):
         return False
 
-    if input_type == 'username':
+    if input_type == "username":
         # Username: 3-20 characters, alphanumeric and underscores only
-        return bool(re.match(r'^[a-zA-Z0-9_]{3,20}$', input_value))
+        return bool(re.match(r"^[a-zA-Z0-9_]{3,20}$", input_value))
 
-    elif input_type == 'email':
+    elif input_type == "email":
         # Basic email validation
-        email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+        email_pattern = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
         return bool(re.match(email_pattern, input_value))
 
-    elif input_type == 'password':
+    elif input_type == "password":
         # Password: at least 8 characters
         return len(input_value) >= 8
 
@@ -100,13 +97,13 @@ def is_strong_password(password: str) -> tuple[bool, list[str]]:
     if len(password) < 12:
         issues.append("Password must be at least 12 characters long")
 
-    if not re.search(r'[A-Z]', password):
+    if not re.search(r"[A-Z]", password):
         issues.append("Password must contain at least one uppercase letter")
 
-    if not re.search(r'[a-z]', password):
+    if not re.search(r"[a-z]", password):
         issues.append("Password must contain at least one lowercase letter")
 
-    if not re.search(r'\d', password):
+    if not re.search(r"\d", password):
         issues.append("Password must contain at least one digit")
 
     if not re.search(r'[!@#$%^&*(),.?":{}|<>]', password):
@@ -152,19 +149,21 @@ def verify_token(token: str, secret: str) -> Optional[str]:
     import time
 
     try:
-        parts = token.split(':')
+        parts = token.split(":")
         if len(parts) != 3:
             return None
 
         user_id, timestamp, signature = parts
 
         # Check expiry
-        if int(timestamp) < int(time.time()):
+        if int(timestamp) <= int(time.time()):
             return None
 
         # Verify signature
         token_data = f"{user_id}:{timestamp}"
-        expected_signature = hashlib.sha256(f"{token_data}:{secret}".encode()).hexdigest()
+        expected_signature = hashlib.sha256(
+            f"{token_data}:{secret}".encode()
+        ).hexdigest()
 
         if signature != expected_signature:
             return None

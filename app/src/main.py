@@ -6,24 +6,32 @@ A simple Flask application demonstrating security best practices
 import os
 import logging
 from flask import Flask, request, jsonify, render_template_string
-from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
+from flask_jwt_extended import (
+    JWTManager,
+    create_access_token,
+    get_jwt_identity,
+    jwt_required,
+)
+from werkzeug.exceptions import BadRequest, RequestEntityTooLarge, UnsupportedMediaType
 from auth import hash_password, verify_password, validate_input
 from utils import sanitize_output, log_security_event
 
 app = Flask(__name__)
 
 # Configuration
-app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY', 'dev-secret-key-change-in-production')
-app.config['JWT_ACCESS_TOKEN_EXPIRES'] = 3600  # 1 hour
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max upload
+app.config["JWT_SECRET_KEY"] = os.environ.get(
+    "JWT_SECRET_KEY",
+    "dev-secret-key-change-in-production",
+)
+app.config["JWT_ACCESS_TOKEN_EXPIRES"] = 3600  # 1 hour
+app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024  # 16MB max upload
 
 # Initialize JWT
 jwt = JWTManager(app)
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -79,77 +87,88 @@ HOME_TEMPLATE = """
 """
 
 
-@app.route('/')
+@app.route("/")
 def home():
     """Home page with API documentation"""
     return render_template_string(HOME_TEMPLATE)
 
 
-@app.route('/health')
+@app.route("/health")
 def health():
     """Health check endpoint"""
-    return jsonify({
-        'status': 'healthy',
-        'service': 'devsecops-app',
-        'version': '1.0.0'
-    }), 200
+    return (
+        jsonify({"status": "healthy", "service": "devsecops-app", "version": "1.0.0"}),
+        200,
+    )
 
 
-@app.route('/api/register', methods=['POST'])
+@app.route("/api/register", methods=["POST"])
 def register():
     """
     Register a new user
     Expected JSON: { "username": "string", "password": "string", "email": "string" }
     """
     try:
+        if not request.is_json:
+            return jsonify({"error": "Content-Type must be application/json"}), 415
+
         data = request.get_json()
 
         if not data:
-            return jsonify({'error': 'No data provided'}), 400
+            return jsonify({"error": "No data provided"}), 400
 
-        username = data.get('username')
-        password = data.get('password')
-        email = data.get('email')
+        username = data.get("username")
+        password = data.get("password")
+        email = data.get("email")
 
         # Validate input
         if not all([username, password, email]):
-            return jsonify({'error': 'Missing required fields'}), 400
+            return jsonify({"error": "Missing required fields"}), 400
 
         # Validate username
-        if not validate_input(username, 'username'):
-            return jsonify({'error': 'Invalid username format'}), 400
+        if not validate_input(username, "username"):
+            return jsonify({"error": "Invalid username format"}), 400
 
         # Validate email
-        if not validate_input(email, 'email'):
-            return jsonify({'error': 'Invalid email format'}), 400
+        if not validate_input(email, "email"):
+            return jsonify({"error": "Invalid email format"}), 400
 
         # Check if user already exists
         if username in users_db:
-            return jsonify({'error': 'User already exists'}), 409
+            return jsonify({"error": "User already exists"}), 409
 
         # Hash password
         hashed_password = hash_password(password)
 
         # Store user
         users_db[username] = {
-            'password': hashed_password,
-            'email': email,
-            'created_at': str(os.times())
+            "password": hashed_password,
+            "email": email,
+            "created_at": str(os.times()),
         }
 
-        log_security_event('USER_REGISTERED', {'username': username})
+        log_security_event("USER_REGISTERED", {"username": username})
 
-        return jsonify({
-            'message': 'User registered successfully',
-            'username': username
-        }), 201
+        return (
+            jsonify(
+                {
+                    "message": "User registered successfully",
+                    "username": sanitize_output(username),
+                }
+            ),
+            201,
+        )
 
+    except RequestEntityTooLarge:
+        return jsonify({"error": "Request payload too large"}), 413
+    except (BadRequest, UnsupportedMediaType):
+        return jsonify({"error": "Invalid or unsupported JSON request"}), 400
     except Exception as e:
         logger.error(f"Registration error: {str(e)}")
-        return jsonify({'error': 'Internal server error'}), 500
+        return jsonify({"error": "Internal server error"}), 500
 
 
-@app.route('/api/login', methods=['POST'])
+@app.route("/api/login", methods=["POST"])
 def login():
     """
     Login and get JWT token
@@ -159,56 +178,70 @@ def login():
         data = request.get_json()
 
         if not data:
-            return jsonify({'error': 'No data provided'}), 400
+            return jsonify({"error": "No data provided"}), 400
 
-        username = data.get('username')
-        password = data.get('password')
+        username = data.get("username")
+        password = data.get("password")
 
         if not all([username, password]):
-            return jsonify({'error': 'Missing credentials'}), 400
+            return jsonify({"error": "Missing credentials"}), 400
 
         # Check if user exists
         if username not in users_db:
-            log_security_event('LOGIN_FAILED', {'username': username, 'reason': 'User not found'})
-            return jsonify({'error': 'Invalid credentials'}), 401
+            log_security_event(
+                "LOGIN_FAILED", {"username": username, "reason": "User not found"}
+            )
+            return jsonify({"error": "Invalid credentials"}), 401
 
         # Verify password
-        if not verify_password(password, users_db[username]['password']):
-            log_security_event('LOGIN_FAILED', {'username': username, 'reason': 'Invalid password'})
-            return jsonify({'error': 'Invalid credentials'}), 401
+        if not verify_password(password, users_db[username]["password"]):
+            log_security_event(
+                "LOGIN_FAILED", {"username": username, "reason": "Invalid password"}
+            )
+            return jsonify({"error": "Invalid credentials"}), 401
 
         # Create access token
         access_token = create_access_token(identity=username)
 
-        log_security_event('LOGIN_SUCCESS', {'username': username})
+        log_security_event("LOGIN_SUCCESS", {"username": username})
 
-        return jsonify({
-            'access_token': access_token,
-            'token_type': 'Bearer',
-            'username': username
-        }), 200
+        return (
+            jsonify(
+                {
+                    "access_token": access_token,
+                    "token_type": "Bearer",
+                    "username": sanitize_output(username),
+                }
+            ),
+            200,
+        )
 
     except Exception as e:
         logger.error(f"Login error: {str(e)}")
-        return jsonify({'error': 'Internal server error'}), 500
+        return jsonify({"error": "Internal server error"}), 500
 
 
-@app.route('/api/protected', methods=['GET'])
+@app.route("/api/protected", methods=["GET"])
 @jwt_required()
 def protected():
     """Protected endpoint that requires JWT authentication"""
     try:
         current_user = get_jwt_identity()
-        return jsonify({
-            'message': f'Hello {current_user}! You have accessed a protected endpoint.',
-            'user': current_user
-        }), 200
+        return (
+            jsonify(
+                {
+                    "message": f"Hello {current_user}! You have accessed a protected endpoint.",
+                    "user": current_user,
+                }
+            ),
+            200,
+        )
     except Exception as e:
         logger.error(f"Protected endpoint error: {str(e)}")
-        return jsonify({'error': 'Internal server error'}), 500
+        return jsonify({"error": "Internal server error"}), 500
 
 
-@app.route('/api/user/info', methods=['GET'])
+@app.route("/api/user/info", methods=["GET"])
 @jwt_required()
 def get_user_info():
     """Get current user information"""
@@ -216,24 +249,29 @@ def get_user_info():
         current_user = get_jwt_identity()
 
         if current_user not in users_db:
-            return jsonify({'error': 'User not found'}), 404
+            return jsonify({"error": "User not found"}), 404
 
         user_data = users_db[current_user].copy()
         # Remove sensitive data
-        user_data.pop('password', None)
+        user_data.pop("password", None)
 
-        return jsonify({
-            'username': current_user,
-            'email': user_data.get('email'),
-            'created_at': user_data.get('created_at')
-        }), 200
+        return (
+            jsonify(
+                {
+                    "username": current_user,
+                    "email": user_data.get("email"),
+                    "created_at": user_data.get("created_at"),
+                }
+            ),
+            200,
+        )
 
     except Exception as e:
         logger.error(f"Get user info error: {str(e)}")
-        return jsonify({'error': 'Internal server error'}), 500
+        return jsonify({"error": "Internal server error"}), 500
 
 
-@app.route('/api/user/update', methods=['POST'])
+@app.route("/api/user/update", methods=["POST"])
 @jwt_required()
 def update_user():
     """
@@ -245,51 +283,51 @@ def update_user():
         data = request.get_json()
 
         if not data:
-            return jsonify({'error': 'No data provided'}), 400
+            return jsonify({"error": "No data provided"}), 400
 
         if current_user not in users_db:
-            return jsonify({'error': 'User not found'}), 404
+            return jsonify({"error": "User not found"}), 404
 
         # Update email if provided
-        if 'email' in data:
-            email = data['email']
-            if not validate_input(email, 'email'):
-                return jsonify({'error': 'Invalid email format'}), 400
-            users_db[current_user]['email'] = email
+        if "email" in data:
+            email = data["email"]
+            if not validate_input(email, "email"):
+                return jsonify({"error": "Invalid email format"}), 400
+            users_db[current_user]["email"] = email
 
-        log_security_event('USER_UPDATED', {'username': current_user})
+        log_security_event("USER_UPDATED", {"username": current_user})
 
-        return jsonify({
-            'message': 'User updated successfully',
-            'username': current_user
-        }), 200
+        return (
+            jsonify({"message": "User updated successfully", "username": current_user}),
+            200,
+        )
 
     except Exception as e:
         logger.error(f"Update user error: {str(e)}")
-        return jsonify({'error': 'Internal server error'}), 500
+        return jsonify({"error": "Internal server error"}), 500
 
 
 @app.errorhandler(404)
 def not_found(error):
     """Handle 404 errors"""
-    return jsonify({'error': 'Endpoint not found'}), 404
+    return jsonify({"error": "Endpoint not found"}), 404
 
 
 @app.errorhandler(405)
 def method_not_allowed(error):
     """Handle 405 errors"""
-    return jsonify({'error': 'Method not allowed'}), 405
+    return jsonify({"error": "Method not allowed"}), 405
 
 
 @app.errorhandler(500)
 def internal_error(error):
     """Handle 500 errors"""
     logger.error(f"Internal server error: {str(error)}")
-    return jsonify({'error': 'Internal server error'}), 500
+    return jsonify({"error": "Internal server error"}), 500
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # Note: In production, use a WSGI server like Gunicorn or uWSGI
     # and set debug=False
-    debug_mode = os.environ.get('FLASK_DEBUG', 'False').lower() == 'true'
-    app.run(host='0.0.0.0', port=5000, debug=debug_mode)
+    debug_mode = os.environ.get("FLASK_DEBUG", "False").lower() == "true"
+    app.run(host="0.0.0.0", port=5000, debug=debug_mode)

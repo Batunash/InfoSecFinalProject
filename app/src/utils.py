@@ -36,11 +36,9 @@ def log_security_event(event_type: str, details: Dict[str, Any]) -> None:
         details: Dictionary containing event details
     """
     timestamp = datetime.utcnow().isoformat()
-    log_entry = {
-        'timestamp': timestamp,
-        'event_type': event_type,
-        'details': details
-    }
+    log_entry = {"timestamp": timestamp, "event_type": event_type, "details": details}
+
+    logger.debug(f"Security Event Details: {log_entry}")
 
     # Log to standard logger
     logger.info(f"Security Event: {event_type} - {details}")
@@ -59,9 +57,9 @@ def get_client_ip(request) -> str:
     Returns:
         Client IP address
     """
-    if request.headers.get('X-Forwarded-For'):
-        return request.headers.get('X-Forwarded-For').split(',')[0].strip()
-    return request.remote_addr or 'unknown'
+    if request.headers.get("X-Forwarded-For"):
+        return request.headers.get("X-Forwarded-For").split(",")[0].strip()
+    return request.remote_addr or "unknown"
 
 
 def is_safe_url(url: str) -> bool:
@@ -78,7 +76,7 @@ def is_safe_url(url: str) -> bool:
         return False
 
     # Prevent open redirects
-    if url.startswith(('http://', 'https://')):
+    if url.startswith(("http://", "https://")):
         # Only allow same-origin redirects
         # In production, configure your allowed domains
         return False
@@ -86,7 +84,7 @@ def is_safe_url(url: str) -> bool:
     return True
 
 
-def mask_sensitive_data(data: str, mask_char: str = '*', visible_chars: int = 4) -> str:
+def mask_sensitive_data(data: str, mask_char: str = "*", visible_chars: int = 4) -> str:
     """
     Mask sensitive data for logging purposes
 
@@ -133,6 +131,7 @@ def generate_csrf_token() -> str:
         CSRF token string
     """
     import secrets
+
     return secrets.token_hex(32)
 
 
@@ -161,35 +160,35 @@ def parse_user_agent(user_agent: str) -> Dict[str, str]:
         Dictionary with parsed information
     """
     if not user_agent:
-        return {'browser': 'unknown', 'os': 'unknown'}
+        return {"browser": "unknown", "os": "unknown"}
 
     # Basic parsing - in production, use a proper user agent parser
-    browser = 'unknown'
-    os = 'unknown'
+    browser = "unknown"
+    os = "unknown"
 
     ua_lower = user_agent.lower()
 
-    if 'chrome' in ua_lower:
-        browser = 'Chrome'
-    elif 'firefox' in ua_lower:
-        browser = 'Firefox'
-    elif 'safari' in ua_lower:
-        browser = 'Safari'
-    elif 'edge' in ua_lower:
-        browser = 'Edge'
+    if "chrome" in ua_lower:
+        browser = "Chrome"
+    elif "firefox" in ua_lower:
+        browser = "Firefox"
+    elif "safari" in ua_lower:
+        browser = "Safari"
+    elif "edge" in ua_lower:
+        browser = "Edge"
 
-    if 'windows' in ua_lower:
-        os = 'Windows'
-    elif 'mac' in ua_lower:
-        os = 'macOS'
-    elif 'linux' in ua_lower:
-        os = 'Linux'
-    elif 'android' in ua_lower:
-        os = 'Android'
-    elif 'iphone' in ua_lower or 'ipad' in ua_lower:
-        os = 'iOS'
+    if "windows" in ua_lower:
+        os = "Windows"
+    elif "mac" in ua_lower:
+        os = "macOS"
+    elif "linux" in ua_lower:
+        os = "Linux"
+    elif "android" in ua_lower:
+        os = "Android"
+    elif "iphone" in ua_lower or "ipad" in ua_lower:
+        os = "iOS"
 
-    return {'browser': browser, 'os': os}
+    return {"browser": browser, "os": os}
 
 
 def format_error_response(error: str, status_code: int = 500) -> Dict[str, Any]:
@@ -204,13 +203,13 @@ def format_error_response(error: str, status_code: int = 500) -> Dict[str, Any]:
         Formatted error response dictionary
     """
     return {
-        'error': error,
-        'status': status_code,
-        'timestamp': datetime.utcnow().isoformat()
+        "error": error,
+        "status": status_code,
+        "timestamp": datetime.utcnow().isoformat(),
     }
 
 
-def format_success_response(data: Any, message: str = 'Success') -> Dict[str, Any]:
+def format_success_response(data: Any, message: str = "Success") -> Dict[str, Any]:
     """
     Format a standardized success response
 
@@ -222,8 +221,8 @@ def format_success_response(data: Any, message: str = 'Success') -> Dict[str, An
         Formatted success response dictionary
     """
     return {
-        'message': message,
-        'data': data,
-        'status': 'success',
-        'timestamp': datetime.utcnow().isoformat()
+        "message": message,
+        "data": data,
+        "status": "success",
+        "timestamp": datetime.utcnow().isoformat(),
     }

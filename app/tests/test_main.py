@@ -250,7 +250,7 @@ class TestSecurityFeatures:
 
     def test_max_content_length(self, client):
         """Test that large uploads are rejected"""
-        large_data = {'x' * (17 * 1024 * 1024)}  # 17MB
+        large_data = 'x' * (17 * 1024 * 1024)  # 17MB
 
         response = client.post('/api/register',
                                json={'username': large_data,

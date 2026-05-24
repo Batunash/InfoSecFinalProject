@@ -1,22 +1,11 @@
-# Web Framework
 Flask==3.0.0
 Flask-JWT-Extended==4.6.0
-
-# Security
 bcrypt==4.1.2
-
-# Configuration
 python-dotenv==1.0.0
-
-# Testing
-pytest==7.4.3
-pytest-cov==4.1.0
-
-# Security Scanning Tools
-bandit==1.7.6
-safety==2.3.5
-
-# Code Quality
-flake8==6.1.0
-black==23.12.1
-isort==5.13.2
+pytest
+pytest-cov
+bandit
+safety
+flake8
+black
+isort

@@ -74,9 +74,9 @@ echo [OK] User logged in
 echo.
 
 echo Accessing protected endpoint...
-curl -s -X GET http://localhost:5000/api/protected -H "Authorization: Bearer YOUR_TOKEN_HERE"
-echo.
-echo [OK] Protected endpoint accessed
+REM Note: In practice, extract token from login response above and use it here
+REM Example: curl -s -X GET http://localhost:5000/api/protected -H "Authorization: Bearer <actual_token_from_login>"
+echo [OK] Protected endpoint accessed (demo - replace with actual token)
 echo.
 
 REM 6. Unit Tests
